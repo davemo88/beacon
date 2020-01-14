@@ -5,8 +5,7 @@
 ### creating and using a beacon
 * create beacon
 * share beacon
-* broadcast beacon state updates
-
+* broadcast beacon state messages
 
 ### watching for a beacon
 * add beacon to watch list
