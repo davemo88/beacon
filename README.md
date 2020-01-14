@@ -10,7 +10,7 @@
 ### watching for a beacon
 * add beacon to watch list
 * update local state according to messages
-* save last message to compare timestamps with new messages 
+  * save last message to compare timestamps with new messages 
 
 ## features
 People will need a place to share beacon pubkeys.
