@@ -11,6 +11,6 @@ mod tests {
 
 }
 
-fn main() {
-
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    p2p::chat_example()
 }
