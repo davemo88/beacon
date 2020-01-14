@@ -12,5 +12,5 @@ mod tests {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    p2p::chat_example()
+    p2p::beacon_p2p()
 }
