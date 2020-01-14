@@ -17,4 +17,4 @@ People will need a place to share beacon pubkeys.
 
 In the app, users get a list of their beacons and a list of the beacons they are watching for. They can add items to each list as well as remove. They can add some local metadata for the beacons e.g. nicknames, colors, pictures, owners.
 
-Settings include message storage, time zone, 
+Settings include message storage, time zone, TTL and rate-limiting, 
