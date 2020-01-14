@@ -1,83 +1,118 @@
-use pgp::composed::{key, signed_key};
-use pgp::ser::Serialize;
-use std::io::Write;
 
-// should I give them a body, e.g. a name for new beacons?
-enum MessageType {
-    BeaconOn,
-    BeaconOff,
-}
+use rand;
+use bincode;
+use chrono;
+use std::{fs, io};
+use std::io::{Read, Write};
+use ed25519_dalek::{Keypair, Signature, PublicKey};
+use ed25519_dalek::{PUBLIC_KEY_LENGTH, SECRET_KEY_LENGTH, KEYPAIR_LENGTH, SIGNATURE_LENGTH};
+use serde::{Serialize, Deserialize};
 
 struct Message {
-    message_type: MessageType,
-    broadcast_time: String,
-    pubkey: String,
-    sig: String,
+    beacon_state: bool,
+    broadcast_time: chrono::DateTime<chrono::Utc>,
+    pubkey: PublicKey,
+    sig: Signature,
 }
 
+#[derive(Serialize, Deserialize)]
 struct Beacon {
     name: String,
-    signed_key: signed_key::SignedSecretKey,
+    keypair: Keypair,
 }
 
-//fn broadcast_message(msg: &Message) -> ()
-//{
-////TODO: verify signature before broadcasting
-//
-//}
-//
-//fn sign_message(msg: &mut Message) -> ()
-//{
-//
-//}
-
-fn new_beacon(name: String) {
+fn new_beacon(name: &String) -> Beacon {
     println!("creating new beacon {}", name);
-    let key_params = key::SecretKeyParamsBuilder::default()
-        .key_type(key::KeyType::EdDSA)
-        .can_sign(true)
-        .primary_user_id(String::from("this_user"))
-        .build()
-        .unwrap();
 
-// https://github.com/rpgp/rpgp/blob/348b7c62bb09a188274d3bf659db20b861748d88/pgp-ffi/src/secret_key.rs#L159
-    let signed_key = key_params.generate().unwrap().sign(|| "".into()).unwrap();
+    let mut csprng = rand::rngs::OsRng{};
+
+    let b = Beacon {
+        name: name.to_string(),
+        keypair: Keypair::generate(&mut csprng),
+    };
 
     println!("new beacon created");
     println!("saving new beacon");
 
-    let b = Beacon {
-        name: name,
-        signed_key: signed_key,
-    };
-
-    save_beacon(&b);
+    save_beacon(&b).unwrap();
 
     println!("new beacon saved");
+
+    b
 }
 
-fn load_beacon(name: String) {
+fn save_beacon(b: &Beacon) -> io::Result<()> {
 
-}
-
-fn save_beacon(b: &Beacon) -> std::io::Result<()> {
-
-    let mut buffer = std::io::BufWriter::new(std::fs::File::create("test.bcn")?);
-    b.signed_key.to_writer(&mut buffer);
+    let encoded_beacon: Vec<u8> = bincode::serialize(&b).unwrap();
+    let mut buffer = io::BufWriter::new(fs::File::create(format!("{}.bcn", b.name))?);
+    buffer.write_all(&encoded_beacon)?;
     buffer.flush()?;
     Ok(())
-
 }
 
-//    let new = Message {
-//        message_type: MessageType::BeaconOff,
-//        broadcast_time: String::from("Now"),
-//        pubkey: String::from("pubkey"),
-//        sig: String::from("sig"),
-//    };
+//fn load_beacon(name: String) -> Result<Beacon, io::Error> {
+fn load_beacon(name: &String) -> Beacon {
+    
+    println!("loading beacon {}", name);
+    let mut f = fs::File::open(format!("{}.bcn", name)).unwrap();
+    let mut buffer = Vec::new();
+    f.read_to_end(&mut buffer);
+
+    let b: Beacon = bincode::deserialize(&buffer).unwrap();
+
+    println!("beacon loaded");
+    b
+}
+
+fn delete_beacon(name: &String) -> io::Result<()> {
+    fs::remove_file(format!("{}.bcn", name))?;
+    Ok(())
+}
+
+fn create_message(beacon: &Beacon, beacon_state: bool) -> Message 
+{
+    let broadcast_time = chrono::Utc::now();
+
+    let mut msg = Message {
+        beacon_state: beacon_state,
+        broadcast_time: broadcast_time, 
+        pubkey: beacon.keypair.public,
+//        sig: sig,
+        sig: beacon.keypair.sign(b"bogus"),
+    };
+
+    msg.sig = beacon.keypair.sign(&get_bytes_to_sign(&msg));
+
+    msg
+}
+
+fn get_bytes_to_sign(message: &Message) -> Vec<u8> {
+    let mut for_signing: Vec<u8> = bincode::serialize(&message.broadcast_time.timestamp()).unwrap(); 
+    for_signing.push(message.beacon_state as u8);
+    for_signing
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_beacon() {
+
+        let name = String::from("test");
+    
+        let b = new_beacon(&name);
+    
+        let lb = load_beacon(&name);
+    
+        let msg = create_message(&b, true);
+
+        assert!(lb.keypair.public.verify(&get_bytes_to_sign(&msg), &msg.sig).is_ok());
+
+        delete_beacon(&b.name);
+    }
+}
 
 fn main() {
-
-    let new = new_beacon(String::from("new beacon"));
 
 }
