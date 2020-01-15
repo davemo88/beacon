@@ -41,7 +41,15 @@ impl<TSubstream: AsyncRead + AsyncWrite> NetworkBehaviourEventProcess<FloodsubEv
     fn inject_event(&mut self, message: FloodsubEvent) {
         if let FloodsubEvent::Message(message) = message {
             let m: beacon::Message = bincode::deserialize(&message.data).unwrap();
-            println!("Beacon '{:?}' is now {:?}", m.pubkey, m.beacon_state);
+            if m.pubkey.verify(&m.get_bytes_to_sign(), &m.sig).is_ok() {
+                println!("Beacon '{:?}' is now {:?}", m.pubkey, m.beacon_state);
+            }
+            else
+            {
+                println!("Message from Beacon '{:?}' has bad sig", m.pubkey);
+            }
+
+
         }
     }
 }
