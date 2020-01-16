@@ -4,8 +4,18 @@ use chrono;
 use std::{fs, io};
 use std::io::{Read, Write};
 use ed25519_dalek::{Keypair, Signature, PublicKey};
-//use ed25519_dalek::{PUBLIC_KEY_LENGTH, SECRET_KEY_LENGTH, KEYPAIR_LENGTH, SIGNATURE_LENGTH};
 use serde::{Serialize, Deserialize};
+
+#[derive(Serialize, Deserialize)]
+pub enum Command {
+    Create(String),
+    Delete(String),
+    Broadcast(String,bool),
+    Subscribe(BeaconSub),
+    Unsubscribe(BeaconSub),
+    ListBeacons(),
+    ListSubs()
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct Beacon {
@@ -25,7 +35,7 @@ pub struct Message {
 pub struct BeaconSub {
     pub name: String,
     pub pubkey: PublicKey,
-    pub last_message: Message,
+    pub last_message: Option<Message>,
 }
 
 impl Beacon {

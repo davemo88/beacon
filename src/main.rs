@@ -1,5 +1,6 @@
 mod beacon;
 mod p2p;
+mod cli;
 
 #[cfg(test)]
 mod tests {

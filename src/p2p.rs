@@ -1,4 +1,5 @@
 use async_std::{io, task};
+use hex;
 use futures::{future, prelude::*};
 use libp2p::{
     Multiaddr,
@@ -10,6 +11,8 @@ use libp2p::{
     mdns::{Mdns, MdnsEvent},
     swarm::NetworkBehaviourEventProcess
 };
+use daemon_engine;
+use serde::{Serialize, Deserialize};
 use std::{error::Error, task::{Context, Poll}};
 
 use crate::beacon;
@@ -42,7 +45,7 @@ impl<TSubstream: AsyncRead + AsyncWrite> NetworkBehaviourEventProcess<FloodsubEv
         if let FloodsubEvent::Message(message) = message {
             let m: beacon::Message = bincode::deserialize(&message.data).unwrap();
             if m.pubkey.verify(&m.get_bytes_to_sign(), &m.sig).is_ok() {
-                println!("Beacon '{:?}' is now {:?}", m.pubkey, m.beacon_state);
+                println!("Beacon '{:?}' is now {:?}", hex::encode(m.pubkey.as_bytes()), m.beacon_state);
             }
             else
             {
@@ -53,6 +56,12 @@ impl<TSubstream: AsyncRead + AsyncWrite> NetworkBehaviourEventProcess<FloodsubEv
         }
     }
 }
+
+#[derive(Debug,Clone,Serialize,Deserialize)]
+struct Request {}
+
+#[derive(Debug,Clone,Serialize,Deserialize)]
+struct Response {}
 
 pub fn beacon_p2p() -> Result<(), Box<dyn Error>> {
     let local_key = identity::Keypair::generate_ed25519();
@@ -77,9 +86,9 @@ pub fn beacon_p2p() -> Result<(), Box<dyn Error>> {
 
     let mut my_beacons: Vec<beacon::Beacon> = Vec::new();
 
-// broadcast if a beacon file is passed
-    if let Some(beacon_path) = std::env::args().nth(1) {
-        let name: String = beacon_path.parse()?;
+// broadcast if a beacon name is passed
+    if let Some(beacon_name) = std::env::args().nth(1) {
+        let name: String = beacon_name.parse()?;
         let b = beacon::Beacon::new(&name);
         my_beacons.push(b);
     }
@@ -90,7 +99,14 @@ pub fn beacon_p2p() -> Result<(), Box<dyn Error>> {
 //        println!("Dialed {:?}", to_dial)
 //    }
 
+
+// main task
+// check for new messages from p2p channel subscriptions
+// check for new commands from the cli
+
     Swarm::listen_on(&mut swarm, "/ip4/0.0.0.0/tcp/0".parse()?)?;
+
+    let cli_listener = daemon_engine::UnixServer::<daemon_engine::JsonCodec<Response, Request>>::new("/var/tmp/beacon.sock",daemon_engine::JsonCodec::new()).unwrap();
 
     let mut listening = false;
     task::block_on(future::poll_fn(move |cx: &mut Context| {
@@ -109,6 +125,7 @@ pub fn beacon_p2p() -> Result<(), Box<dyn Error>> {
                 }
             }
         }
+// here we put checking for commands over the unix socket e.g. from the cli
         if my_beacons.len() > 0 {
             let m = my_beacons[0].create_message(true);
             swarm.floodsub.publish(&floodsub_topic, bincode::serialize(&m).unwrap());
