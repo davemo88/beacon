@@ -6,15 +6,17 @@ use std::io::{Read, Write};
 use ed25519_dalek::{Keypair, Signature, PublicKey};
 use serde::{Serialize, Deserialize};
 
+pub const SOCKET_PATH: &'static str = "/var/tmp/beacon.sock";
+
 #[derive(Serialize, Deserialize)]
 pub enum Command {
     Create(String),
     Delete(String),
     Broadcast(String,bool),
-    Subscribe(BeaconSub),
-    Unsubscribe(BeaconSub),
+    Subscribe { name: String, pubkey: String },
+    Unsubscribe(String),
     ListBeacons(),
-    ListSubs()
+    ListSubs(),
 }
 
 #[derive(Serialize, Deserialize)]
@@ -171,3 +173,9 @@ mod tests {
         Beacon::delete(&b.name).unwrap();
     }
 }
+
+#[derive(Debug,Clone,Serialize,Deserialize)]
+pub struct Request {}
+
+#[derive(Debug,Clone,Serialize,Deserialize)]
+pub struct Response {}

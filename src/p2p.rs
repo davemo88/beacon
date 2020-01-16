@@ -1,4 +1,5 @@
 use async_std::{io, task};
+use std::fs;
 use hex;
 use futures::{future, prelude::*};
 use libp2p::{
@@ -11,9 +12,9 @@ use libp2p::{
     mdns::{Mdns, MdnsEvent},
     swarm::NetworkBehaviourEventProcess
 };
-use daemon_engine;
 use serde::{Serialize, Deserialize};
 use std::{error::Error, task::{Context, Poll}};
+use std::os::unix::net::UnixListener;
 
 use crate::beacon;
 
@@ -56,12 +57,6 @@ impl<TSubstream: AsyncRead + AsyncWrite> NetworkBehaviourEventProcess<FloodsubEv
         }
     }
 }
-
-#[derive(Debug,Clone,Serialize,Deserialize)]
-struct Request {}
-
-#[derive(Debug,Clone,Serialize,Deserialize)]
-struct Response {}
 
 pub fn beacon_p2p() -> Result<(), Box<dyn Error>> {
     let local_key = identity::Keypair::generate_ed25519();
@@ -106,7 +101,12 @@ pub fn beacon_p2p() -> Result<(), Box<dyn Error>> {
 
     Swarm::listen_on(&mut swarm, "/ip4/0.0.0.0/tcp/0".parse()?)?;
 
-    let cli_listener = daemon_engine::UnixServer::<daemon_engine::JsonCodec<Response, Request>>::new("/var/tmp/beacon.sock",daemon_engine::JsonCodec::new()).unwrap();
+// TODO: clean this up properly somewhere else
+    let socket = std::path::Path::new(beacon::SOCKET_PATH);
+    if socket.exists() {
+        fs::remove_file(&socket).unwrap();
+    }
+    let cli_listener = UnixListener::bind(socket).unwrap();
 
     let mut listening = false;
     task::block_on(future::poll_fn(move |cx: &mut Context| {
@@ -126,6 +126,16 @@ pub fn beacon_p2p() -> Result<(), Box<dyn Error>> {
             }
         }
 // here we put checking for commands over the unix socket e.g. from the cli
+        for stream in cli_listener.incoming() {
+            match stream {
+                Ok(stream) => {
+// need to read command as bytes, deserialize, match on enum, call function, send response
+                }
+                Err(err) => {
+                    break;
+                }
+            }
+        }
         if my_beacons.len() > 0 {
             let m = my_beacons[0].create_message(true);
             swarm.floodsub.publish(&floodsub_topic, bincode::serialize(&m).unwrap());
@@ -143,3 +153,7 @@ mod tests {
 //    }
 }
 
+
+fn main() {
+    beacon_p2p().unwrap();
+}

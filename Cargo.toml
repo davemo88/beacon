@@ -6,6 +6,18 @@ edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+#[[lib]]
+#name = "beacon"
+#path = "src/beacon.rs"
+#
+#[[bin]]
+#name = "beacond"
+#path = "src/p2p.rs"
+#
+#[[bin]]
+#name = "beacon-cli"
+#path = "src/cli.rs"
+
 [dependencies]
 libp2p = "0.14.0-alpha.1"
 chrono = "0.4.10"
@@ -16,4 +28,3 @@ bincode = "1.2.1"
 async-std = "^1.0"
 futures = "0.3.1"
 hex = "0.4"
-daemon-engine = "0.6.0"
