@@ -75,7 +75,7 @@ pub fn main()
 
     let c: Command = bcli.get_command();
     
-    let mut stream = net::TcpStream::connect(beacon::TCP_ADDRESS).unwrap();
+    let mut stream = net::TcpStream::connect(beacon::CLI_TCP_ADDRESS).unwrap();
     stream.write(&bincode::serialize(&c).unwrap()).unwrap();
     println!("sent command to daemon");
     let mut response = String::new();

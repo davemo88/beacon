@@ -6,7 +6,7 @@ use std::io::{Read, Write};
 use ed25519_dalek::{Keypair, Signature, PublicKey};
 use serde::{Serialize, Deserialize};
 
-pub const TCP_ADDRESS: &'static str = "0.0.0.0:3333";
+pub const CLI_TCP_ADDRESS: &'static str = "0.0.0.0:3333";
 
 #[derive(Serialize, Deserialize)]
 pub enum Command {

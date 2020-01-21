@@ -99,7 +99,7 @@ fn main() ->Result<(), Box<dyn Error>> {
 
     Swarm::listen_on(&mut swarm, "/ip4/0.0.0.0/tcp/0".parse()?)?;
 
-    let cli_listener = net::TcpListener::bind(beacon::TCP_ADDRESS).unwrap();
+    let cli_listener = net::TcpListener::bind(beacon::CLI_TCP_ADDRESS).unwrap();
 
     let mut listening = false;
     task::block_on(future::poll_fn(move |cx: &mut Context| {
