@@ -12,7 +12,7 @@ path = "src/beacon.rs"
 
 [[bin]]
 name = "beacond"
-path = "src/p2p.rs"
+path = "src/daemon.rs"
 #
 [[bin]]
 name = "beacon-cli"

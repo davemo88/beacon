@@ -14,20 +14,11 @@ use libp2p::{
 };
 use serde::{Serialize, Deserialize};
 use std::{error::Error, task::{Context, Poll}};
+use std::io::{Read, Write};
 use std::net;
 
 #[path = "beacon.rs"] mod beacon;
-
-struct BeaconDaemon {
-    socket_path: String,
-}
-
-impl BeaconDaemon {
-
-    fn handle_command(&self, command: beacon::Command) {
-
-    }
-}
+use crate::beacon::Command;
 
 #[derive(NetworkBehaviour)]
 struct BeaconBehavior<TSubstream: AsyncRead + AsyncWrite> {
@@ -69,7 +60,23 @@ impl<TSubstream: AsyncRead + AsyncWrite> NetworkBehaviourEventProcess<FloodsubEv
     }
 }
 
-pub fn beacon_p2p() -> Result<(), Box<dyn Error>> {
+fn get_command(mut stream: net::TcpStream) -> Command {
+    let mut v = Vec::new();
+    stream.read_to_end(&mut v).unwrap();
+    let c: beacon::Command = bincode::deserialize(&v).unwrap();
+    c
+}
+
+#[cfg(test)]
+mod tests {
+//    use super::*;
+//
+//    #[test]
+//    fn test_p2p() -> Result<(), Box<dyn Error>> {
+//    }
+}
+
+fn main() ->Result<(), Box<dyn Error>> {
     let local_key = identity::Keypair::generate_ed25519();
     let local_peer_id = PeerId::from(local_key.public());
 
@@ -89,26 +96,6 @@ pub fn beacon_p2p() -> Result<(), Box<dyn Error>> {
         behavior.floodsub.subscribe(floodsub_topic.clone());
         Swarm::new(transport, behavior, local_peer_id)
     };
-
-    let mut my_beacons: Vec<beacon::Beacon> = Vec::new();
-
-// broadcast if a beacon name is passed
-    if let Some(beacon_name) = std::env::args().nth(1) {
-        let name: String = beacon_name.parse()?;
-        let b = beacon::Beacon::new(&name);
-        my_beacons.push(b);
-    }
-
-//    if let Some(to_dial) = std::env::args().nth(1) {
-//        let addr: Multiaddr = to_dial.parse()?;
-//        Swarm::dial_addr(&mut swarm, addr)?;
-//        println!("Dialed {:?}", to_dial)
-//    }
-
-
-// main task
-// check for new messages from p2p channel subscriptions
-// check for new commands from the cli
 
     Swarm::listen_on(&mut swarm, "/ip4/0.0.0.0/tcp/0".parse()?)?;
 
@@ -136,31 +123,42 @@ pub fn beacon_p2p() -> Result<(), Box<dyn Error>> {
             match stream {
                 Ok(stream) => {
                     println!("New connection: {}", stream.peer_addr().unwrap());
-// need to read command as bytes, deserialize, match on enum, call function, send response
+                    match get_command(stream) {
+                        Command::Create(name) => {
+                            let b = beacon::Beacon::new(&name);
+                            b.save().unwrap();
+                            println!("created beacon {}", name);
+//                            stream.write("b")
+                        },
+                        Command::Delete(name) => {
+                            beacon::Beacon::delete(&name).unwrap();
+                            println!("deleted beacon {}", name);
+
+                        },
+                        Command::Broadcast(name,state) => {
+                            let b = beacon::Beacon::load(&name);
+                            let m = b.create_message(state);
+                            swarm.floodsub.publish(&floodsub_topic, bincode::serialize(&m).unwrap());
+                            println!("broadcast state {:?} on beacon {}", state, name);
+                        },
+//                        Command::Subscribe { name: String, pubkey: String } => {
+//                            let bs = beacon::BeaconSub {
+//                                name: name,
+//                                pubkey: pubkey
+//                            }
+//                        }
+//                  //      Command::Unsubscribe(name),
+//                  //      Command::ListBeacons(),
+//                  //      Command::ListSubs(),
+                        _ => println!("unrecognized command"),
+                    //            
+                    }
                 }
                 Err(err) => {
                     break;
                 }
             }
         }
-        if my_beacons.len() > 0 {
-            let m = my_beacons[0].create_message(true);
-            swarm.floodsub.publish(&floodsub_topic, bincode::serialize(&m).unwrap());
-        }
         Poll::Pending
-    }))
-}
-
-#[cfg(test)]
-mod tests {
-//    use super::*;
-//
-//    #[test]
-//    fn test_p2p() -> Result<(), Box<dyn Error>> {
-//    }
-}
-
-
-fn main() {
-    beacon_p2p().unwrap();
+    })) 
 }
