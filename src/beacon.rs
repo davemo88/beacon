@@ -6,7 +6,7 @@ use std::io::{Read, Write};
 use ed25519_dalek::{Keypair, Signature, PublicKey};
 use serde::{Serialize, Deserialize};
 
-pub const SOCKET_PATH: &'static str = "/var/tmp/beacon.sock";
+pub const TCP_ADDRESS: &'static str = "0.0.0.0:3333";
 
 #[derive(Serialize, Deserialize)]
 pub enum Command {
@@ -179,3 +179,4 @@ pub struct Request {}
 
 #[derive(Debug,Clone,Serialize,Deserialize)]
 pub struct Response {}
+

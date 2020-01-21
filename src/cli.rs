@@ -1,8 +1,10 @@
-use crate::beacon;
-use beacon::Command;
 use std::iter::FromIterator;
-use std::os::unix::net::UnixStream;
+use std::net;
 use std::io::prelude::*;
+
+#[path = "beacon.rs"] mod beacon;
+
+use crate::beacon::Command;
 
 struct BeaconCli {
 //    pub args: std::env::Args,
@@ -73,7 +75,7 @@ pub fn main()
 
     let c: Command = bcli.get_command();
     
-    let mut stream = UnixStream::connect(beacon::SOCKET_PATH).unwrap();
+    let mut stream = net::TcpStream::connect(beacon::TCP_ADDRESS).unwrap();
     let mut response = String::new();
     stream.read_to_string(&mut response).unwrap();
     println!("{}", response);

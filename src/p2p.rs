@@ -14,9 +14,20 @@ use libp2p::{
 };
 use serde::{Serialize, Deserialize};
 use std::{error::Error, task::{Context, Poll}};
-use std::os::unix::net::UnixListener;
+use std::net;
 
-use crate::beacon;
+#[path = "beacon.rs"] mod beacon;
+
+struct BeaconDaemon {
+    socket_path: String,
+}
+
+impl BeaconDaemon {
+
+    fn handle_command(&self, command: beacon::Command) {
+
+    }
+}
 
 #[derive(NetworkBehaviour)]
 struct BeaconBehavior<TSubstream: AsyncRead + AsyncWrite> {
@@ -101,12 +112,7 @@ pub fn beacon_p2p() -> Result<(), Box<dyn Error>> {
 
     Swarm::listen_on(&mut swarm, "/ip4/0.0.0.0/tcp/0".parse()?)?;
 
-// TODO: clean this up properly somewhere else
-    let socket = std::path::Path::new(beacon::SOCKET_PATH);
-    if socket.exists() {
-        fs::remove_file(&socket).unwrap();
-    }
-    let cli_listener = UnixListener::bind(socket).unwrap();
+    let cli_listener = net::TcpListener::bind(beacon::TCP_ADDRESS).unwrap();
 
     let mut listening = false;
     task::block_on(future::poll_fn(move |cx: &mut Context| {
@@ -129,6 +135,7 @@ pub fn beacon_p2p() -> Result<(), Box<dyn Error>> {
         for stream in cli_listener.incoming() {
             match stream {
                 Ok(stream) => {
+                    println!("New connection: {}", stream.peer_addr().unwrap());
 // need to read command as bytes, deserialize, match on enum, call function, send response
                 }
                 Err(err) => {

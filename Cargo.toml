@@ -6,17 +6,17 @@ edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-#[[lib]]
-#name = "beacon"
-#path = "src/beacon.rs"
+[lib]
+name = "beacon"
+path = "src/beacon.rs"
+
+[[bin]]
+name = "beacond"
+path = "src/p2p.rs"
 #
-#[[bin]]
-#name = "beacond"
-#path = "src/p2p.rs"
-#
-#[[bin]]
-#name = "beacon-cli"
-#path = "src/cli.rs"
+[[bin]]
+name = "beacon-cli"
+path = "src/cli.rs"
 
 [dependencies]
 libp2p = "0.14.0-alpha.1"
