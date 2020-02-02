@@ -17,5 +17,8 @@ Cargo.lock
 /target
 #**/*.rs.bk
 
-#vim
+# vim
 *.swp
+
+# beacon files
+*.bcn

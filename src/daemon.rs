@@ -60,6 +60,8 @@ impl<TSubstream: AsyncRead + AsyncWrite> NetworkBehaviourEventProcess<FloodsubEv
     }
 }
 
+
+
 fn get_command(mut stream: net::TcpStream) -> Command {
     let mut v = Vec::new();
     stream.read_to_end(&mut v).unwrap();
@@ -82,7 +84,7 @@ fn main() ->Result<(), Box<dyn Error>> {
 
     println!("local peer id: {:?}", local_peer_id);
 
-    let transport =  libp2p::build_development_transport(local_key)?;
+    let transport = libp2p::build_tcp_ws_secio_mplex_yamux(local_key)?;
 
     let floodsub_topic = floodsub::TopicBuilder::new("beacon").build();
 
@@ -100,6 +102,25 @@ fn main() ->Result<(), Box<dyn Error>> {
     Swarm::listen_on(&mut swarm, "/ip4/0.0.0.0/tcp/0".parse()?)?;
 
     let cli_listener = net::TcpListener::bind(beacon::CLI_TCP_ADDRESS).unwrap();
+
+// look for peers from the discovery server
+    match net::TcpStream::connect(beacon::DISCOVERY_ADDRESS) {
+        Ok(mut stream) => {
+            let mut v = Vec::new();
+            stream.read_to_end(&mut v).unwrap();
+            let peer_ips: Vec<String> = bincode::deserialize(&v).unwrap();
+            println!("discovery peer ids: {:?}", peer_ips);
+            for ip in peer_ips {
+                let addr: Multiaddr = format!("/ip4/{}",ip).parse()?;
+                match Swarm::dial_addr(&mut swarm, addr) {
+                    Ok(()) => (),
+                    Err(_) => println!("couldn't dial {:?}", ip),
+                }
+            }
+            
+        }
+        Err(e) => println!("couldn't connect to discovery"),
+    }
 
     let mut listening = false;
     task::block_on(future::poll_fn(move |cx: &mut Context| {
@@ -159,6 +180,7 @@ fn main() ->Result<(), Box<dyn Error>> {
                 }
             }
         }
+
         Poll::Pending
     })) 
 }

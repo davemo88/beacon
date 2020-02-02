@@ -7,7 +7,6 @@ use std::io::prelude::*;
 use crate::beacon::Command;
 
 struct BeaconCli {
-//    pub args: std::env::Args,
     args: Vec<String>,
 }
 
@@ -68,7 +67,8 @@ pub fn main()
     println!("running cli test");
 
     let mut bcli = BeaconCli {
-        args: Vec::from_iter(std::env::args()),
+//        args: Vec::from_iter(std::env::args()),
+        args: std::env::args().collect(),
     };
 
     println!("{:?}", bcli.args);
@@ -78,7 +78,7 @@ pub fn main()
     let mut stream = net::TcpStream::connect(beacon::CLI_TCP_ADDRESS).unwrap();
     stream.write(&bincode::serialize(&c).unwrap()).unwrap();
     println!("sent command to daemon");
-    let mut response = String::new();
+//    let mut response = String::new();
 //    stream.read_to_string(&mut response).unwrap();
 //    println!("{}", response);
 
