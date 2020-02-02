@@ -69,6 +69,15 @@ fn get_command(mut stream: net::TcpStream) -> Command {
     c
 }
 
+fn get_discovery_address() -> String {
+    let discovery = match std::env::var("BEACON_DISCOVERY") {
+        Ok(val) => String::from(val),
+        Err(_) => String::from("0.0.0.0")
+    };
+
+    format!("{}:{}", discovery, beacon::DISCOVERY_PORT)
+}
+
 #[cfg(test)]
 mod tests {
 //    use super::*;
@@ -89,7 +98,7 @@ fn main() ->Result<(), Box<dyn Error>> {
     let floodsub_topic = floodsub::TopicBuilder::new("beacon").build();
 
     let mut swarm = {
-        let mdns = task::block_on(Mdns::new())?;
+        let mdns = Mdns::new()?;
         let mut behavior = BeaconBehavior {
             floodsub: Floodsub::new(local_peer_id.clone()),
             mdns,
@@ -104,7 +113,7 @@ fn main() ->Result<(), Box<dyn Error>> {
     let cli_listener = net::TcpListener::bind(beacon::CLI_TCP_ADDRESS).unwrap();
 
 // look for peers from the discovery server
-    match net::TcpStream::connect(beacon::DISCOVERY_ADDRESS) {
+    match net::TcpStream::connect(get_discovery_address()) {
         Ok(mut stream) => {
             let mut v = Vec::new();
             stream.read_to_end(&mut v).unwrap();

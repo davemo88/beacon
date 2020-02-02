@@ -23,7 +23,7 @@ name = "discovery"
 path = "src/discovery.rs"
 
 [dependencies]
-libp2p = "0.14.0-alpha.1"
+libp2p = "0.15.0"
 chrono = "0.4.10"
 rand = "0.7.3"
 ed25519-dalek = { version = "1.0.0-pre.3", features = ["serde"] }

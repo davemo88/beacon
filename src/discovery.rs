@@ -9,7 +9,7 @@ fn main () -> Result<(), Box<dyn Error>> {
 
     let mut peer_ips: Vec<String> = Vec::new();
 
-    let listener = net::TcpListener::bind(beacon::DISCOVERY_ADDRESS).unwrap();
+    let listener = net::TcpListener::bind(format!("0.0.0.0:{}", beacon::DISCOVERY_PORT)).unwrap();
 
     task::block_on(future::poll_fn(move |cx: &mut Context| {
         for stream in listener.incoming() {
