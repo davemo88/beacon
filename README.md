@@ -12,7 +12,7 @@ a beacon is a keypair and a 1 bit state. the private key holder broadcasts signe
 
 `signature` - signed hash of `broadcast_time` and `beacon_state`
 
-the pubkey is used as the channel name for normal floodsub p2p protocol so peers can watch for certain beacons to change state. only a private key holder can broadast a state update for a beacon because peers validate messages using the sig and the pubkey.
+the pubkey is used as the channel name for normal floodsub p2p protocol so peers can watch for certain beacons to change state. only a private key holder can broadcast a state update for a beacon because peers validate messages using the sig and the pubkey.
 
 ## user flow
 
